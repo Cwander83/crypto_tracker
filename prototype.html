@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CryptoTrack — Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            surface: { DEFAULT: '#06080f', 50: '#0b0f1a', 100: '#111826' },
+            accent: { DEFAULT: '#00d4ff', light: '#33ddff', blue: '#0099ff', indigo: '#6366f1' },
+          },
+          fontFamily: { mono: ['JetBrains Mono', 'monospace'] },
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .table-row { cursor: pointer; transition: background 0.15s; }
+    .table-row:hover { background: rgba(0, 212, 255, 0.05); }
+    .modal-panel { transform: translateY(100%); }
+    .chart-bar { transform-origin: bottom; }
+    @keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    .live-dot { animation: pulse-dot 1.5s ease-in-out infinite; }
+    .search-dropdown { display: none; }
+    .search-dropdown.open { display: block; }
+    .chart-glass {
+      background: rgba(0, 212, 255, 0.02);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 212, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    .chart-glass::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0, 212, 255, 0.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="bg-[#06080f] text-white min-h-screen overflow-x-hidden">
+
+<!-- ═══════════════════════════════════ HEADER ═══════════════════════════════════ -->
+<header id="app-header" class="sticky top-0 z-50 border-b border-white/5 bg-[#06080f]/90 backdrop-blur-xl">
+  <div class="max-w-7xl mx-auto px-6 h-16 flex items-center gap-6">
+    <!-- Logo -->
+    <div class="flex items-center gap-2 shrink-0">
+      <div class="w-7 h-7 bg-accent flex items-center justify-center text-[#06080f] font-bold text-sm">C</div>
+      <span class="font-semibold text-white tracking-tight">CryptoTrack</span>
+    </div>
+
+    <!-- Search -->
+    <div class="relative flex-1 max-w-lg" id="search-container">
+      <div class="relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input id="search-input" type="text" placeholder="Search coins..." class="w-full bg-white/5 border border-white/10 pl-10 pr-4 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-accent/60 focus:bg-white/8 transition-all" />
+      </div>
+      <!-- Dropdown -->
+      <div id="search-dropdown" class="search-dropdown absolute top-full left-0 right-0 mt-2 bg-[#0b0f1a] border border-white/10 overflow-hidden shadow-2xl z-50">
+        <div class="p-2 text-xs text-white/30 px-3 pt-3 pb-1 font-medium">Recent searches</div>
+        <div class="search-result table-row flex items-center gap-3 px-3 py-2.5" onclick="openModal('bitcoin')">
+          <img src="https://assets.coingecko.com/coins/images/1/thumb/bitcoin.png" class="w-7 h-7 rounded-full" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><circle cx=%2216%22 cy=%2216%22 r=%2216%22 fill=%22%23f7931a%22/><text x=%2250%25%22 y=%2255%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2214%22>B</text></svg>'">
+          <div>
+            <div class="text-sm font-medium">Bitcoin</div>
+            <div class="text-xs text-white/40 mono">BTC</div>
+          </div>
+          <div class="ml-auto text-right">
+            <div class="text-sm mono">$67,420</div>
+            <div class="text-xs text-emerald-400">+2.4%</div>
+          </div>
+        </div>
+        <div class="search-result table-row flex items-center gap-3 px-3 py-2.5" onclick="openModal('ethereum')">
+          <img src="https://assets.coingecko.com/coins/images/279/thumb/ethereum.png" class="w-7 h-7 rounded-full" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><circle cx=%2216%22 cy=%2216%22 r=%2216%22 fill=%22%23627eea%22/><text x=%2250%25%22 y=%2255%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2214%22>E</text></svg>'">
+          <div>
+            <div class="text-sm font-medium">Ethereum</div>
+            <div class="text-xs text-white/40 mono">ETH</div>
+          </div>
+          <div class="ml-auto text-right">
+            <div class="text-sm mono">$3,521</div>
+            <div class="text-xs text-emerald-400">+1.8%</div>
+          </div>
+        </div>
+        <div class="search-result table-row flex items-center gap-3 px-3 py-2.5" onclick="openModal('solana')">
+          <img src="https://assets.coingecko.com/coins/images/4128/thumb/solana.png" class="w-7 h-7 rounded-full" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><circle cx=%2216%22 cy=%2216%22 r=%2216%22 fill=%22%239945ff%22/><text x=%2250%25%22 y=%2255%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2214%22>S</text></svg>'">
+          <div>
+            <div class="text-sm font-medium">Solana</div>
+            <div class="text-xs text-white/40 mono">SOL</div>
+          </div>
+          <div class="ml-auto text-right">
+            <div class="text-sm mono">$178.40</div>
+            <div class="text-xs text-red-400">-3.1%</div>
+          </div>
+        </div>
+        <div class="border-t border-white/5 mt-1"></div>
+        <div class="text-xs text-white/30 px-3 py-2 pb-2">Type to search all coins…</div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 ml-auto">
+      <!-- Live indicator -->
+      <div class="flex items-center gap-1.5 text-xs text-white/40">
+        <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 live-dot"></div>
+        <span>Live</span>
+      </div>
+      <!-- Theme toggle -->
+      <button id="theme-toggle" onclick="toggleTheme()" class="w-9 h-9 bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
+        <svg id="icon-sun" class="w-4 h-4 text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════ HERO ═══════════════════════════════════ -->
+<section id="hero" class="max-w-7xl mx-auto px-6 pt-16 pb-12">
+  <div class="flex flex-col items-start gap-4">
+    <div id="hero-tag" class="flex items-center gap-2 text-xs font-medium text-accent bg-accent/10 border border-accent/20 px-3 py-1">
+      <div class="w-1.5 h-1.5 rounded-full bg-accent live-dot"></div>
+      Real-time crypto data
+    </div>
+    <h1 id="hero-title" class="text-5xl font-bold tracking-tight leading-tight">
+      Track every coin.<br>
+      <span class="text-transparent bg-clip-text bg-gradient-to-r from-accent to-blue-400">Never miss a move.</span>
+    </h1>
+    <p id="hero-sub" class="text-white/40 text-lg max-w-lg">Live prices, market data, and trending coins — all in one place.</p>
+
+    <!-- Ticker strip -->
+    <div id="hero-ticker" class="flex gap-4 mt-2 overflow-hidden">
+      <div class="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2.5">
+        <span class="text-white/50 text-xs">BTC</span>
+        <span class="mono text-sm font-medium">$67,420</span>
+        <span class="text-emerald-400 text-xs">+2.4%</span>
+      </div>
+      <div class="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2.5">
+        <span class="text-white/50 text-xs">ETH</span>
+        <span class="mono text-sm font-medium">$3,521</span>
+        <span class="text-emerald-400 text-xs">+1.8%</span>
+      </div>
+      <div class="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2.5">
+        <span class="text-white/50 text-xs">SOL</span>
+        <span class="mono text-sm font-medium">$178.40</span>
+        <span class="text-red-400 text-xs">-3.1%</span>
+      </div>
+      <div class="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2.5">
+        <span class="text-white/50 text-xs">BNB</span>
+        <span class="mono text-sm font-medium">$612.80</span>
+        <span class="text-emerald-400 text-xs">+0.9%</span>
+      </div>
+      <div class="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2.5">
+        <span class="text-white/50 text-xs">DOGE</span>
+        <span class="mono text-sm font-medium">$0.1834</span>
+        <span class="text-emerald-400 text-xs">+5.2%</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ TABLES ═══════════════════════════════════ -->
+<section class="max-w-7xl mx-auto px-6 pb-16">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Market Cap -->
+    <div class="coin-table-card bg-[#0b0f1a] border border-white/8 overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-white/5">
+        <h2 class="font-semibold text-sm">Top by Market Cap</h2>
+        <span class="text-xs text-white/30 mono">#1 — #10</span>
+      </div>
+      <table class="w-full text-sm">
+        <thead><tr class="text-white/30 text-xs">
+          <th class="text-left px-5 py-2.5 font-medium">#</th>
+          <th class="text-left py-2.5 font-medium">Coin</th>
+          <th class="text-right py-2.5 pr-5 font-medium">Price</th>
+          <th class="text-right py-2.5 pr-5 font-medium">24h %</th>
+          <th class="text-right py-2.5 pr-5 font-medium hidden sm:table-cell">Mkt Cap</th>
+        </tr></thead>
+        <tbody id="table-marketcap">
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('bitcoin')">
+            <td class="px-5 py-3 text-white/30 mono">1</td>
+            <td class="py-3"><div class="flex items-center gap-2.5"><img src="https://assets.coingecko.com/coins/images/1/thumb/bitcoin.png" class="w-6 h-6 rounded-full" onerror="this.style.display='none'"><div><div class="font-medium">Bitcoin</div><div class="text-xs text-white/30 mono">BTC</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$67,420</td>
+            <td class="py-3 pr-5 text-right text-emerald-400 mono">+2.4%</td>
+            <td class="py-3 pr-5 text-right text-white/50 hidden sm:table-cell">$1.32T</td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('ethereum')">
+            <td class="px-5 py-3 text-white/30 mono">2</td>
+            <td class="py-3"><div class="flex items-center gap-2.5"><img src="https://assets.coingecko.com/coins/images/279/thumb/ethereum.png" class="w-6 h-6 rounded-full" onerror="this.style.display='none'"><div><div class="font-medium">Ethereum</div><div class="text-xs text-white/30 mono">ETH</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$3,521</td>
+            <td class="py-3 pr-5 text-right text-emerald-400 mono">+1.8%</td>
+            <td class="py-3 pr-5 text-right text-white/50 hidden sm:table-cell">$423B</td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('binancecoin')">
+            <td class="px-5 py-3 text-white/30 mono">3</td>
+            <td class="py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center text-[10px] font-bold text-black">B</div><div><div class="font-medium">BNB</div><div class="text-xs text-white/30 mono">BNB</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$612.80</td>
+            <td class="py-3 pr-5 text-right text-emerald-400 mono">+0.9%</td>
+            <td class="py-3 pr-5 text-right text-white/50 hidden sm:table-cell">$89B</td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('solana')">
+            <td class="px-5 py-3 text-white/30 mono">4</td>
+            <td class="py-3"><div class="flex items-center gap-2.5"><img src="https://assets.coingecko.com/coins/images/4128/thumb/solana.png" class="w-6 h-6 rounded-full" onerror="this.style.display='none'"><div><div class="font-medium">Solana</div><div class="text-xs text-white/30 mono">SOL</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$178.40</td>
+            <td class="py-3 pr-5 text-right text-red-400 mono">-3.1%</td>
+            <td class="py-3 pr-5 text-right text-white/50 hidden sm:table-cell">$82B</td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('ripple')">
+            <td class="px-5 py-3 text-white/30 mono">5</td>
+            <td class="py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white">X</div><div><div class="font-medium">XRP</div><div class="text-xs text-white/30 mono">XRP</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$0.548</td>
+            <td class="py-3 pr-5 text-right text-emerald-400 mono">+4.2%</td>
+            <td class="py-3 pr-5 text-right text-white/50 hidden sm:table-cell">$31B</td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('dogecoin')">
+            <td class="px-5 py-3 text-white/30 mono">6</td>
+            <td class="py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-yellow-300 flex items-center justify-center text-[10px] font-bold text-yellow-900">D</div><div><div class="font-medium">Dogecoin</div><div class="text-xs text-white/30 mono">DOGE</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$0.1834</td>
+            <td class="py-3 pr-5 text-right text-emerald-400 mono">+5.2%</td>
+            <td class="py-3 pr-5 text-right text-white/50 hidden sm:table-cell">$26B</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Top Gainers -->
+    <div class="coin-table-card bg-[#0b0f1a] border border-white/8 overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-white/5">
+        <h2 class="font-semibold text-sm flex items-center gap-2">
+          <span class="text-emerald-400">↑</span> Top Gainers <span class="text-white/30 font-normal">24h</span>
+        </h2>
+      </div>
+      <table class="w-full text-sm">
+        <thead><tr class="text-white/30 text-xs">
+          <th class="text-left px-5 py-2.5 font-medium">Coin</th>
+          <th class="text-right py-2.5 pr-5 font-medium">Price</th>
+          <th class="text-right py-2.5 pr-5 font-medium">24h %</th>
+        </tr></thead>
+        <tbody>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('dogecoin')">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-yellow-300 flex items-center justify-center text-[10px] font-bold text-yellow-900">D</div><div><div class="font-medium">Dogecoin</div><div class="text-xs text-white/30 mono">DOGE</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$0.1834</td>
+            <td class="py-3 pr-5 text-right mono"><span class="text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full text-xs">+5.2%</span></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('ripple')">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white">X</div><div><div class="font-medium">XRP</div><div class="text-xs text-white/30 mono">XRP</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$0.548</td>
+            <td class="py-3 pr-5 text-right mono"><span class="text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full text-xs">+4.2%</span></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('pepe')">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-[10px] font-bold text-white">P</div><div><div class="font-medium">Pepe</div><div class="text-xs text-white/30 mono">PEPE</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$0.0000148</td>
+            <td class="py-3 pr-5 text-right mono"><span class="text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full text-xs">+3.7%</span></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('bitcoin')">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><img src="https://assets.coingecko.com/coins/images/1/thumb/bitcoin.png" class="w-6 h-6 rounded-full" onerror="this.style.display='none'"><div><div class="font-medium">Bitcoin</div><div class="text-xs text-white/30 mono">BTC</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$67,420</td>
+            <td class="py-3 pr-5 text-right mono"><span class="text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full text-xs">+2.4%</span></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('ethereum')">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><img src="https://assets.coingecko.com/coins/images/279/thumb/ethereum.png" class="w-6 h-6 rounded-full" onerror="this.style.display='none'"><div><div class="font-medium">Ethereum</div><div class="text-xs text-white/30 mono">ETH</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$3,521</td>
+            <td class="py-3 pr-5 text-right mono"><span class="text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full text-xs">+1.8%</span></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('binancecoin')">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center text-[10px] font-bold text-black">B</div><div><div class="font-medium">BNB</div><div class="text-xs text-white/30 mono">BNB</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$612.80</td>
+            <td class="py-3 pr-5 text-right mono"><span class="text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full text-xs">+0.9%</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Top Losers -->
+    <div class="coin-table-card bg-[#0b0f1a] border border-white/8 overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-white/5">
+        <h2 class="font-semibold text-sm flex items-center gap-2">
+          <span class="text-red-400">↓</span> Top Losers <span class="text-white/30 font-normal">24h</span>
+        </h2>
+      </div>
+      <table class="w-full text-sm">
+        <thead><tr class="text-white/30 text-xs">
+          <th class="text-left px-5 py-2.5 font-medium">Coin</th>
+          <th class="text-right py-2.5 pr-5 font-medium">Price</th>
+          <th class="text-right py-2.5 pr-5 font-medium">24h %</th>
+        </tr></thead>
+        <tbody>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('solana')">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><img src="https://assets.coingecko.com/coins/images/4128/thumb/solana.png" class="w-6 h-6 rounded-full" onerror="this.style.display='none'"><div><div class="font-medium">Solana</div><div class="text-xs text-white/30 mono">SOL</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$178.40</td>
+            <td class="py-3 pr-5 text-right mono"><span class="text-red-400 bg-red-400/10 px-2 py-0.5 rounded-full text-xs">-3.1%</span></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('cardano')">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white">A</div><div><div class="font-medium">Cardano</div><div class="text-xs text-white/30 mono">ADA</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$0.461</td>
+            <td class="py-3 pr-5 text-right mono"><span class="text-red-400 bg-red-400/10 px-2 py-0.5 rounded-full text-xs">-2.8%</span></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('polkadot')">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-pink-500 flex items-center justify-center text-[10px] font-bold text-white">D</div><div><div class="font-medium">Polkadot</div><div class="text-xs text-white/30 mono">DOT</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$7.82</td>
+            <td class="py-3 pr-5 text-right mono"><span class="text-red-400 bg-red-400/10 px-2 py-0.5 rounded-full text-xs">-2.1%</span></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('avalanche')">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-[10px] font-bold text-white">A</div><div><div class="font-medium">Avalanche</div><div class="text-xs text-white/30 mono">AVAX</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$38.12</td>
+            <td class="py-3 pr-5 text-right mono"><span class="text-red-400 bg-red-400/10 px-2 py-0.5 rounded-full text-xs">-1.9%</span></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('chainlink')">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-blue-400 flex items-center justify-center text-[10px] font-bold text-white">L</div><div><div class="font-medium">Chainlink</div><div class="text-xs text-white/30 mono">LINK</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$14.63</td>
+            <td class="py-3 pr-5 text-right mono"><span class="text-red-400 bg-red-400/10 px-2 py-0.5 rounded-full text-xs">-1.4%</span></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('near')">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center text-[10px] font-bold text-white">N</div><div><div class="font-medium">NEAR</div><div class="text-xs text-white/30 mono">NEAR</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono">$5.91</td>
+            <td class="py-3 pr-5 text-right mono"><span class="text-red-400 bg-red-400/10 px-2 py-0.5 rounded-full text-xs">-0.8%</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Trending -->
+    <div class="coin-table-card bg-[#0b0f1a] border border-white/8 overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-white/5">
+        <h2 class="font-semibold text-sm flex items-center gap-2">
+          🔥 Trending
+        </h2>
+        <span class="text-xs text-white/30">Most searched</span>
+      </div>
+      <table class="w-full text-sm">
+        <thead><tr class="text-white/30 text-xs">
+          <th class="text-left px-5 py-2.5 font-medium">#</th>
+          <th class="text-left py-2.5 font-medium">Coin</th>
+          <th class="text-right py-2.5 pr-5 font-medium">Price</th>
+          <th class="text-right py-2.5 pr-5 font-medium">Score</th>
+        </tr></thead>
+        <tbody>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('pepe')">
+            <td class="px-5 py-3 text-white/30 mono">1</td>
+            <td class="py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-[10px] font-bold text-white">P</div><div><div class="font-medium">Pepe</div><div class="text-xs text-white/30 mono">PEPE</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono text-emerald-400">+3.7%</td>
+            <td class="py-3 pr-5 text-right"><div class="w-16 h-1 bg-white/10 ml-auto"><div class="h-1 bg-accent" style="width:90%"></div></div></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('bitcoin')">
+            <td class="px-5 py-3 text-white/30 mono">2</td>
+            <td class="py-3"><div class="flex items-center gap-2.5"><img src="https://assets.coingecko.com/coins/images/1/thumb/bitcoin.png" class="w-6 h-6 rounded-full" onerror="this.style.display='none'"><div><div class="font-medium">Bitcoin</div><div class="text-xs text-white/30 mono">BTC</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono text-emerald-400">+2.4%</td>
+            <td class="py-3 pr-5 text-right"><div class="w-16 h-1 bg-white/10 ml-auto"><div class="h-1 bg-accent" style="width:78%"></div></div></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('dogecoin')">
+            <td class="px-5 py-3 text-white/30 mono">3</td>
+            <td class="py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-yellow-300 flex items-center justify-center text-[10px] font-bold text-yellow-900">D</div><div><div class="font-medium">Dogecoin</div><div class="text-xs text-white/30 mono">DOGE</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono text-emerald-400">+5.2%</td>
+            <td class="py-3 pr-5 text-right"><div class="w-16 h-1 bg-white/10 ml-auto"><div class="h-1 bg-accent" style="width:65%"></div></div></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('solana')">
+            <td class="px-5 py-3 text-white/30 mono">4</td>
+            <td class="py-3"><div class="flex items-center gap-2.5"><img src="https://assets.coingecko.com/coins/images/4128/thumb/solana.png" class="w-6 h-6 rounded-full" onerror="this.style.display='none'"><div><div class="font-medium">Solana</div><div class="text-xs text-white/30 mono">SOL</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono text-red-400">-3.1%</td>
+            <td class="py-3 pr-5 text-right"><div class="w-16 h-1 bg-white/10 ml-auto"><div class="h-1 bg-accent" style="width:52%"></div></div></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('ethereum')">
+            <td class="px-5 py-3 text-white/30 mono">5</td>
+            <td class="py-3"><div class="flex items-center gap-2.5"><img src="https://assets.coingecko.com/coins/images/279/thumb/ethereum.png" class="w-6 h-6 rounded-full" onerror="this.style.display='none'"><div><div class="font-medium">Ethereum</div><div class="text-xs text-white/30 mono">ETH</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono text-emerald-400">+1.8%</td>
+            <td class="py-3 pr-5 text-right"><div class="w-16 h-1 bg-white/10 ml-auto"><div class="h-1 bg-accent" style="width:40%"></div></div></td>
+          </tr>
+          <tr class="table-row coin-row border-t border-white/5" onclick="openModal('ripple')">
+            <td class="px-5 py-3 text-white/30 mono">6</td>
+            <td class="py-3"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white">X</div><div><div class="font-medium">XRP</div><div class="text-xs text-white/30 mono">XRP</div></div></div></td>
+            <td class="py-3 pr-5 text-right mono text-emerald-400">+4.2%</td>
+            <td class="py-3 pr-5 text-right"><div class="w-16 h-1 bg-white/10 ml-auto"><div class="h-1 bg-accent" style="width:30%"></div></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ MODAL ═══════════════════════════════════ -->
+<div id="modal-overlay" class="fixed inset-0 z-[100] hidden items-end">
+  <!-- Backdrop -->
+  <div id="modal-backdrop" class="absolute inset-0 bg-black/60" style="backdrop-filter:blur(4px)" onclick="closeModal()"></div>
+  <!-- Panel -->
+  <div id="modal-panel" class="modal-panel relative w-full bg-[#06080f] border-t border-white/10 z-10 max-h-[90vh] overflow-y-auto scrollbar-hide">
+    <!-- Handle -->
+    <div class="flex justify-center pt-3 pb-1">
+      <div class="w-10 h-1 rounded-full bg-white/20"></div>
+    </div>
+
+    <div class="px-6 pb-10">
+      <!-- Header row -->
+      <div id="modal-header" class="flex items-start justify-between pt-4 pb-6">
+        <div class="flex items-center gap-4">
+          <img id="modal-icon" src="" class="w-14 h-14" onerror="this.style.display='none'">
+          <div>
+            <div class="flex items-center gap-3">
+              <h2 id="modal-name" class="text-2xl font-bold">Bitcoin</h2>
+              <span id="modal-symbol" class="text-xs mono bg-white/10 border border-white/10 px-2.5 py-1 text-white/50">BTC</span>
+            </div>
+            <div class="flex items-center gap-3 mt-1">
+              <span id="modal-price" class="text-3xl font-bold mono">$67,420</span>
+              <span id="modal-change" class="text-sm px-2.5 py-1 rounded-full bg-emerald-400/15 text-emerald-400 mono font-medium">+2.4%</span>
+            </div>
+          </div>
+        </div>
+        <button onclick="closeModal()" class="w-9 h-9 bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all text-white/50 hover:text-white mt-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Stat cards -->
+      <div id="modal-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div class="bg-white/5 border border-white/8 p-3.5">
+          <div class="text-xs text-white/40 mb-1">Market Cap</div>
+          <div class="font-semibold mono text-sm" id="modal-mcap">$1.32T</div>
+        </div>
+        <div class="bg-white/5 border border-white/8 p-3.5">
+          <div class="text-xs text-white/40 mb-1">24h Volume</div>
+          <div class="font-semibold mono text-sm" id="modal-vol">$28.4B</div>
+        </div>
+        <div class="bg-white/5 border border-white/8 p-3.5">
+          <div class="text-xs text-white/40 mb-1">Circulating</div>
+          <div class="font-semibold mono text-sm" id="modal-supply">19.7M BTC</div>
+        </div>
+        <div class="bg-white/5 border border-white/8 p-3.5">
+          <div class="text-xs text-white/40 mb-1">24h High</div>
+          <div class="font-semibold mono text-sm text-emerald-400" id="modal-high">$68,100</div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div id="modal-chart-section" class="mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold">Price Chart</h3>
+          <div class="flex gap-1" id="chart-tabs">
+            <button class="chart-tab active text-xs px-3 py-1.5 bg-accent text-[#06080f] font-medium transition-all" data-days="1">1D</button>
+            <button class="chart-tab text-xs px-3 py-1.5 bg-white/5 text-white/40 hover:bg-white/10 transition-all" data-days="7">7D</button>
+            <button class="chart-tab text-xs px-3 py-1.5 bg-white/5 text-white/40 hover:bg-white/10 transition-all" data-days="30">30D</button>
+            <button class="chart-tab text-xs px-3 py-1.5 bg-white/5 text-white/40 hover:bg-white/10 transition-all" data-days="365">1Y</button>
+          </div>
+        </div>
+        <!-- Frosted glass chart -->
+        <div class="chart-glass p-4 h-44 flex items-end gap-0.5" id="chart-bars">
+          <!-- bars generated by JS -->
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div id="modal-desc" class="mb-6">
+        <h3 class="text-sm font-semibold mb-2">About</h3>
+        <p class="text-sm text-white/50 leading-relaxed" id="modal-desc-text">Bitcoin is a decentralized digital currency that can be transferred on the peer-to-peer bitcoin network. Bitcoin transactions are verified by network nodes through cryptography and recorded in a public distributed ledger called a blockchain.</p>
+      </div>
+
+      <!-- Links -->
+      <div id="modal-links">
+        <h3 class="text-sm font-semibold mb-3">Links</h3>
+        <div class="flex flex-wrap gap-2">
+          <a href="#" class="flex items-center gap-2 text-xs bg-white/5 border border-white/10 px-3 py-2 hover:bg-white/10 transition-all text-white/60 hover:text-white">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+            Website
+          </a>
+          <a href="#" class="flex items-center gap-2 text-xs bg-white/5 border border-white/10 px-3 py-2 hover:bg-white/10 transition-all text-white/60 hover:text-white">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            Explorer
+          </a>
+          <a href="#" class="flex items-center gap-2 text-xs bg-white/5 border border-white/10 px-3 py-2 hover:bg-white/10 transition-all text-white/60 hover:text-white">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.954 4.569a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.691 8.094 4.066 6.13 1.64 3.161a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.061a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.937 4.937 0 004.604 3.417 9.868 9.868 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.054 0 13.999-7.496 13.999-13.986 0-.209 0-.42-.015-.63a9.936 9.936 0 002.46-2.548l-.047-.02z"/></svg>
+            Twitter
+          </a>
+          <a href="#" class="flex items-center gap-2 text-xs bg-white/5 border border-white/10 px-3 py-2 hover:bg-white/10 transition-all text-white/60 hover:text-white">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
+            Reddit
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  gsap.registerPlugin(ScrollTrigger);
+
+  // ── Page load animations ──────────────────────────────
+  const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+  tl.from("#app-header", { y: -40, autoAlpha: 0, duration: 0.6 })
+    .from(["#hero-tag", "#hero-title", "#hero-sub"], { y: 30, autoAlpha: 0, stagger: 0.12, duration: 0.7 }, "-=0.3")
+    .from("#hero-ticker > div", { y: 20, autoAlpha: 0, stagger: 0.08, duration: 0.5 }, "-=0.3");
+
+  // Table cards reveal
+  gsap.from(".coin-table-card", {
+    autoAlpha: 0, y: 40, stagger: 0.12, duration: 0.7, ease: "power3.out",
+    scrollTrigger: { trigger: ".coin-table-card", start: "top 85%" }
+  });
+
+  // Table rows stagger
+  document.querySelectorAll(".coin-table-card").forEach(card => {
+    gsap.from(card.querySelectorAll(".coin-row"), {
+      autoAlpha: 0, x: -10, stagger: 0.05, duration: 0.4, ease: "power2.out",
+      scrollTrigger: { trigger: card, start: "top 80%" }
+    });
+  });
+
+  // ── Search dropdown ────────────────────────────────────
+  const searchInput = document.getElementById("search-input");
+  const dropdown = document.getElementById("search-dropdown");
+
+  searchInput.addEventListener("focus", () => {
+    dropdown.classList.add("open");
+    gsap.fromTo(dropdown, { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: 0.2, ease: "power2.out" });
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!document.getElementById("search-container").contains(e.target)) {
+      gsap.to(dropdown, { autoAlpha: 0, y: -8, duration: 0.15, onComplete: () => dropdown.classList.remove("open") });
+    }
+  });
+
+  // ── Chart mock data ────────────────────────────────────
+  function generateChart(volatility = 1) {
+    const bars = document.getElementById("chart-bars");
+    bars.innerHTML = "";
+    let prev = 50 + Math.random() * 20;
+    const vals = [];
+    for (let i = 0; i < 48; i++) {
+      prev = Math.max(10, Math.min(90, prev + (Math.random() - 0.45) * 8 * volatility));
+      vals.push(prev);
+    }
+    const max = Math.max(...vals), min = Math.min(...vals);
+    const trend = vals[vals.length - 1] > vals[0];
+    vals.forEach(v => {
+      const pct = ((v - min) / (max - min)) * 100;
+      const bar = document.createElement("div");
+      bar.className = "flex-1 chart-bar " + (trend ? "bg-emerald-400/70" : "bg-red-400/70");
+      bar.style.height = pct + "%";
+      bars.appendChild(bar);
+    });
+    gsap.from(bars.children, { scaleY: 0, stagger: 0.01, duration: 0.4, ease: "power2.out" });
+  }
+
+  document.getElementById("chart-tabs").addEventListener("click", (e) => {
+    const tab = e.target.closest(".chart-tab");
+    if (!tab) return;
+    document.querySelectorAll(".chart-tab").forEach(t => {
+      t.classList.remove("active", "bg-accent", "text-[#06080f]");
+      t.classList.add("bg-white/5", "text-white/40");
+    });
+    tab.classList.add("active", "bg-accent", "text-[#06080f]");
+    tab.classList.remove("bg-white/5", "text-white/40");
+    gsap.to("#chart-bars", { autoAlpha: 0, duration: 0.15, onComplete: () => {
+      generateChart(parseInt(tab.dataset.days) > 30 ? 1.5 : 0.8);
+      gsap.to("#chart-bars", { autoAlpha: 1, duration: 0.2 });
+    }});
+  });
+
+  // ── Modal ──────────────────────────────────────────────
+  const coins = {
+    bitcoin: { name: "Bitcoin", symbol: "BTC", price: "$67,420", change: "+2.4%", up: true, mcap: "$1.32T", vol: "$28.4B", supply: "19.7M BTC", high: "$68,100", icon: "https://assets.coingecko.com/coins/images/1/thumb/bitcoin.png", desc: "Bitcoin is a decentralized digital currency that can be transferred on the peer-to-peer bitcoin network. Bitcoin transactions are verified by network nodes through cryptography and recorded in a public distributed ledger called a blockchain." },
+    ethereum: { name: "Ethereum", symbol: "ETH", price: "$3,521", change: "+1.8%", up: true, mcap: "$423B", vol: "$14.2B", supply: "120M ETH", high: "$3,580", icon: "https://assets.coingecko.com/coins/images/279/thumb/ethereum.png", desc: "Ethereum is a decentralized, open-source blockchain with smart contract functionality. Ether is the native cryptocurrency of the platform. Amongst cryptocurrencies, Ether is second only to Bitcoin in market capitalization." },
+    solana: { name: "Solana", symbol: "SOL", price: "$178.40", change: "-3.1%", up: false, mcap: "$82B", vol: "$3.1B", supply: "460M SOL", high: "$184.20", icon: "https://assets.coingecko.com/coins/images/4128/thumb/solana.png", desc: "Solana is a high-performance blockchain supporting builders around the world creating crypto apps that scale today. Solana is known for its fast transaction speeds and low costs." },
+    dogecoin: { name: "Dogecoin", symbol: "DOGE", price: "$0.1834", change: "+5.2%", up: true, mcap: "$26B", vol: "$2.8B", supply: "142B DOGE", high: "$0.192", icon: "", desc: "Dogecoin is a cryptocurrency based on the Doge meme. It was created as a payment system and has grown into a major cryptocurrency known for its passionate community." },
+    ripple: { name: "XRP", symbol: "XRP", price: "$0.548", change: "+4.2%", up: true, mcap: "$31B", vol: "$1.9B", supply: "56B XRP", high: "$0.561", icon: "", desc: "XRP is the native cryptocurrency of the XRP Ledger, an open-source blockchain. Ripple uses XRP in its products to help financial institutions source liquidity in cross-border transactions." },
+    pepe: { name: "Pepe", symbol: "PEPE", price: "$0.0000148", change: "+3.7%", up: true, mcap: "$6.2B", vol: "$890M", supply: "420T PEPE", high: "$0.0000155", icon: "", desc: "Pepe is a meme-based cryptocurrency inspired by the internet's beloved Pepe the Frog meme. It launched in April 2023 and quickly became one of the most discussed tokens in the crypto space." },
+  };
+
+  function openModal(coinId) {
+    const coin = coins[coinId] || coins.bitcoin;
+    document.getElementById("modal-name").textContent = coin.name;
+    document.getElementById("modal-symbol").textContent = coin.symbol;
+    document.getElementById("modal-price").textContent = coin.price;
+    document.getElementById("modal-mcap").textContent = coin.mcap;
+    document.getElementById("modal-vol").textContent = coin.vol;
+    document.getElementById("modal-supply").textContent = coin.supply;
+    document.getElementById("modal-high").textContent = coin.high;
+    document.getElementById("modal-desc-text").textContent = coin.desc;
+    const changeEl = document.getElementById("modal-change");
+    changeEl.textContent = coin.change;
+    changeEl.className = `text-sm px-2.5 py-1 rounded-full mono font-medium ${coin.up ? "bg-emerald-400/15 text-emerald-400" : "bg-red-400/15 text-red-400"}`;
+    const icon = document.getElementById("modal-icon");
+    icon.src = coin.icon;
+    icon.style.display = coin.icon ? "block" : "none";
+
+    const overlay = document.getElementById("modal-overlay");
+    const backdrop = document.getElementById("modal-backdrop");
+    const panel = document.getElementById("modal-panel");
+    overlay.style.display = "flex";
+
+    const children = panel.querySelectorAll("#modal-header, #modal-stats, #modal-chart-section, #modal-desc, #modal-links");
+
+    gsap.timeline()
+      .fromTo(backdrop, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3 })
+      .fromTo(panel, { y: "100%" }, { y: "0%", duration: 0.5, ease: "power3.out" }, "-=0.2")
+      .from(children, { autoAlpha: 0, y: 16, stagger: 0.07, duration: 0.4, ease: "power2.out" }, "-=0.25");
+
+    generateChart();
+
+    // Reset chart tabs
+    document.querySelectorAll(".chart-tab").forEach((t, i) => {
+      t.classList.toggle("active", i === 0);
+      t.classList.toggle("bg-accent", i === 0);
+      t.classList.toggle("text-[#06080f]", i === 0);
+      t.classList.toggle("bg-white/5", i !== 0);
+      t.classList.toggle("text-white/40", i !== 0);
+    });
+  }
+
+  function closeModal() {
+    const overlay = document.getElementById("modal-overlay");
+    const backdrop = document.getElementById("modal-backdrop");
+    const panel = document.getElementById("modal-panel");
+    gsap.timeline({ onComplete: () => overlay.style.display = "none" })
+      .to(panel, { y: "100%", duration: 0.4, ease: "power3.in" })
+      .to(backdrop, { autoAlpha: 0, duration: 0.2 }, "-=0.2");
+  }
+
+  // ── Theme toggle ────────────────────────────────────────
+  let dark = true;
+  function toggleTheme() {
+    dark = !dark;
+    document.documentElement.classList.toggle("dark", dark);
+    document.body.style.background = dark ? "#06080f" : "#f5f5f7";
+    document.body.style.color = dark ? "white" : "#06080f";
+    gsap.fromTo("#theme-toggle svg", { rotate: -90, scale: 0.5 }, { rotate: 0, scale: 1, duration: 0.35, ease: "back.out(2)" });
+  }
+
+  // Close modal on Escape
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+</script>
+</body>
+</html>
