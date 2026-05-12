@@ -1,6 +1,8 @@
 import { ref } from 'vue'
+import { cacheGet, cacheSet } from '../utils/cache'
 
 const BASE = 'https://api.coingecko.com/api/v3'
+const TTL = 5 * 60_000 // 5 minutes
 
 export interface TrendingCoin {
   item: {
@@ -19,13 +21,26 @@ export function useTrending() {
   const error = ref<string | null>(null)
 
   async function fetch() {
+    const cached = cacheGet<TrendingCoin[]>('trending')
+    if (cached) {
+      trending.value = cached
+      loading.value = false
+      return
+    }
+
     loading.value = true
     error.value = null
     try {
       const res = await window.fetch(`${BASE}/search/trending`)
+      if (res.status === 429) {
+        error.value = 'Rate limited — please wait a moment and try again'
+        return
+      }
       if (!res.ok) throw new Error('API error')
       const data = await res.json()
-      trending.value = (data.coins ?? []).slice(0, 8)
+      const coins = (data.coins ?? []).slice(0, 8) as TrendingCoin[]
+      cacheSet('trending', coins, TTL)
+      trending.value = coins
     } catch (e) {
       error.value = 'Failed to load trending data'
     } finally {
