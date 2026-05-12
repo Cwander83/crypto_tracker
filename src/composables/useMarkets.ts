@@ -24,7 +24,7 @@ export function useMarkets() {
     error.value = null
     try {
       const res = await window.fetch(
-        `${BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&price_change_percentage=24h`
+        `${BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&price_change_percentage=24h`,
       )
       if (!res.ok) throw new Error('API error')
       coins.value = await res.json()
@@ -39,16 +39,16 @@ export function useMarkets() {
 
   const topGainers = computed(() =>
     [...coins.value]
-      .filter(c => c.price_change_percentage_24h != null)
+      .filter((c) => c.price_change_percentage_24h != null)
       .sort((a, b) => b.price_change_percentage_24h - a.price_change_percentage_24h)
-      .slice(0, 8)
+      .slice(0, 8),
   )
 
   const topLosers = computed(() =>
     [...coins.value]
-      .filter(c => c.price_change_percentage_24h != null)
+      .filter((c) => c.price_change_percentage_24h != null)
       .sort((a, b) => a.price_change_percentage_24h - b.price_change_percentage_24h)
-      .slice(0, 8)
+      .slice(0, 8),
   )
 
   return { coins, topByMarketCap, topGainers, topLosers, loading, error, fetch }

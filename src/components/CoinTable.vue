@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onUnmounted, watch, nextTick } from 'vue'
 import { gsap } from 'gsap'
 import { formatPrice, formatPercent, formatLargeNumber } from '../utils/format'
 
@@ -25,7 +25,7 @@ const props = defineProps<{
   titleIcon?: string
 }>()
 
-const emit = defineEmits<{ 'select': [id: string] }>()
+const emit = defineEmits<{ select: [id: string] }>()
 
 const containerRef = ref<HTMLElement | null>(null)
 let ctx: ReturnType<typeof gsap.context>
@@ -45,18 +45,26 @@ function animateRows() {
   }, containerRef.value)
 }
 
-onMounted(animateRows)
-watch(() => props.coins, () => {
-  if (props.coins.length) animateRows()
-}, { once: true })
+watch(
+  () => props.coins,
+  async () => {
+    if (!props.coins.length) return
+    await nextTick()
+    animateRows()
+  },
+  { once: true },
+)
 onUnmounted(() => ctx?.revert())
 </script>
 
 <template>
-  <div ref="containerRef" class="bg-[#0b0f1a] border border-white/8 overflow-hidden">
+  <div
+    ref="containerRef"
+    class="border-md-outline-variant/30 bg-md-surface-container overflow-hidden border"
+  >
     <!-- Header -->
-    <div class="flex items-center justify-between px-5 py-4 border-b border-white/5">
-      <h2 class="font-semibold text-sm flex items-center gap-2">
+    <div class="border-md-outline-variant/20 flex items-center justify-between border-b px-5 py-4">
+      <h2 class="text-md-on-surface flex items-center gap-2 text-sm font-semibold">
         <span v-if="titleIcon">{{ titleIcon }}</span>
         {{ title }}
       </h2>
@@ -64,30 +72,49 @@ onUnmounted(() => ctx?.revert())
 
     <table class="w-full text-sm">
       <thead>
-        <tr class="text-white/30 text-xs">
-          <th v-if="columns.includes('rank')" class="text-left px-5 py-2.5 font-medium w-8">#</th>
-          <th class="text-left py-2.5 font-medium" :class="columns.includes('rank') ? '' : 'px-5'">Coin</th>
-          <th v-if="columns.includes('price')" class="text-right py-2.5 pr-5 font-medium">Price</th>
-          <th v-if="columns.includes('change')" class="text-right py-2.5 pr-5 font-medium">24h %</th>
-          <th v-if="columns.includes('market_cap')" class="text-right py-2.5 pr-5 font-medium hidden sm:table-cell">Mkt Cap</th>
-          <th v-if="columns.includes('score')" class="text-right py-2.5 pr-5 font-medium">Trend</th>
+        <tr class="text-md-on-surface-variant/60 text-xs">
+          <th v-if="columns.includes('rank')" class="w-8 px-5 py-2.5 text-left font-medium">#</th>
+          <th class="py-2.5 text-left font-medium" :class="columns.includes('rank') ? '' : 'px-5'">
+            Coin
+          </th>
+          <th v-if="columns.includes('price')" class="py-2.5 pr-5 text-right font-medium">Price</th>
+          <th v-if="columns.includes('change')" class="py-2.5 pr-5 text-right font-medium">
+            24h %
+          </th>
+          <th
+            v-if="columns.includes('market_cap')"
+            class="hidden py-2.5 pr-5 text-right font-medium sm:table-cell"
+          >
+            Mkt Cap
+          </th>
+          <th v-if="columns.includes('score')" class="py-2.5 pr-5 text-right font-medium">Trend</th>
         </tr>
       </thead>
       <tbody>
         <!-- Skeleton rows -->
         <template v-if="loading || coins.length === 0">
-          <tr v-for="i in 6" :key="i" class="border-t border-white/5">
-            <td v-if="columns.includes('rank')" class="px-5 py-3"><div class="w-4 h-3 bg-white/10 animate-pulse"></div></td>
+          <tr v-for="i in 6" :key="i" class="border-md-outline-variant/20 border-t">
+            <td v-if="columns.includes('rank')" class="px-5 py-3">
+              <div class="bg-md-on-surface/10 h-3 w-4 animate-pulse"></div>
+            </td>
             <td class="py-3" :class="columns.includes('rank') ? '' : 'px-5'">
               <div class="flex items-center gap-2.5">
-                <div class="w-6 h-6 rounded-full bg-white/10 animate-pulse"></div>
-                <div class="w-20 h-3 bg-white/10 animate-pulse"></div>
+                <div class="bg-md-on-surface/10 h-6 w-6 animate-pulse rounded-full"></div>
+                <div class="bg-md-on-surface/10 h-3 w-20 animate-pulse"></div>
               </div>
             </td>
-            <td v-if="columns.includes('price')" class="py-3 pr-5"><div class="w-16 h-3 bg-white/10 animate-pulse ml-auto"></div></td>
-            <td v-if="columns.includes('change')" class="py-3 pr-5"><div class="w-12 h-3 bg-white/10 animate-pulse ml-auto"></div></td>
-            <td v-if="columns.includes('market_cap')" class="py-3 pr-5 hidden sm:table-cell"><div class="w-14 h-3 bg-white/10 animate-pulse ml-auto"></div></td>
-            <td v-if="columns.includes('score')" class="py-3 pr-5"><div class="w-16 h-1 bg-white/10 animate-pulse ml-auto"></div></td>
+            <td v-if="columns.includes('price')" class="py-3 pr-5">
+              <div class="bg-md-on-surface/10 ml-auto h-3 w-16 animate-pulse"></div>
+            </td>
+            <td v-if="columns.includes('change')" class="py-3 pr-5">
+              <div class="bg-md-on-surface/10 ml-auto h-3 w-12 animate-pulse"></div>
+            </td>
+            <td v-if="columns.includes('market_cap')" class="hidden py-3 pr-5 sm:table-cell">
+              <div class="bg-md-on-surface/10 ml-auto h-3 w-14 animate-pulse"></div>
+            </td>
+            <td v-if="columns.includes('score')" class="py-3 pr-5">
+              <div class="bg-md-on-surface/10 ml-auto h-1 w-16 animate-pulse"></div>
+            </td>
           </tr>
         </template>
 
@@ -95,39 +122,53 @@ onUnmounted(() => ctx?.revert())
         <tr
           v-for="(coin, i) in coins"
           :key="coin.id"
-          class="coin-row border-t border-white/5 cursor-pointer transition-colors hover:bg-[#00d4ff]/5"
+          class="coin-row border-md-outline-variant/20 hover:bg-md-primary/5 cursor-pointer border-t transition-colors"
           @click="emit('select', coin.id)"
         >
-          <td v-if="columns.includes('rank')" class="px-5 py-3 text-white/30 font-mono text-xs">
+          <td
+            v-if="columns.includes('rank')"
+            class="text-md-on-surface-variant/60 px-5 py-3 font-mono text-xs"
+          >
             {{ coin.market_cap_rank ?? i + 1 }}
           </td>
           <td class="py-3" :class="columns.includes('rank') ? '' : 'px-5'">
             <div class="flex items-center gap-2.5">
-              <img :src="coin.image" :alt="coin.name" class="w-6 h-6 rounded-full" />
+              <img :src="coin.image" :alt="coin.name" class="h-6 w-6 rounded-full" />
               <div>
-                <div class="font-medium">{{ coin.name }}</div>
-                <div class="text-xs text-white/30 font-mono">{{ coin.symbol.toUpperCase() }}</div>
+                <div class="text-md-on-surface font-medium">{{ coin.name }}</div>
+                <div class="text-md-on-surface-variant/60 font-mono text-xs">
+                  {{ coin.symbol.toUpperCase() }}
+                </div>
               </div>
             </div>
           </td>
-          <td v-if="columns.includes('price')" class="py-3 pr-5 text-right font-mono">
+          <td
+            v-if="columns.includes('price')"
+            class="text-md-on-surface py-3 pr-5 text-right font-mono"
+          >
             {{ formatPrice(coin.current_price) }}
           </td>
           <td v-if="columns.includes('change')" class="py-3 pr-5 text-right">
             <span
-              class="font-mono text-xs px-2 py-0.5 rounded-full"
-              :class="coin.price_change_percentage_24h >= 0
-                ? 'text-emerald-400 bg-emerald-400/10'
-                : 'text-red-400 bg-red-400/10'"
-            >{{ formatPercent(coin.price_change_percentage_24h) }}</span>
+              class="rounded-md-full px-2 py-0.5 font-mono text-xs"
+              :class="
+                coin.price_change_percentage_24h >= 0
+                  ? 'bg-gain/10 text-gain'
+                  : 'bg-loss/10 text-loss'
+              "
+              >{{ formatPercent(coin.price_change_percentage_24h) }}</span
+            >
           </td>
-          <td v-if="columns.includes('market_cap')" class="py-3 pr-5 text-right text-white/50 hidden sm:table-cell font-mono text-xs">
+          <td
+            v-if="columns.includes('market_cap')"
+            class="text-md-on-surface-variant hidden py-3 pr-5 text-right font-mono text-xs sm:table-cell"
+          >
             {{ coin.market_cap ? formatLargeNumber(coin.market_cap) : '—' }}
           </td>
           <td v-if="columns.includes('score')" class="py-3 pr-5 text-right">
-            <div class="w-16 h-1 bg-white/10 ml-auto">
+            <div class="bg-md-on-surface/10 ml-auto h-1 w-16">
               <div
-                class="h-1 bg-[#00d4ff]"
+                class="bg-md-primary h-1"
                 :style="{ width: `${Math.max(10, 100 - (coin.score ?? i) * 12)}%` }"
               ></div>
             </div>

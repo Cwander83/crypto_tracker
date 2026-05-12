@@ -33,15 +33,17 @@ const chartData = computed(() => {
 
   return {
     labels: sampled.map(() => ''),
-    datasets: [{
-      data: sampled.map(p => p[1]),
-      borderColor: color,
-      backgroundColor: isUp ? 'rgba(52,211,153,0.08)' : 'rgba(248,113,113,0.08)',
-      borderWidth: 1.5,
-      fill: true,
-      tension: 0.3,
-      pointRadius: 0,
-    }],
+    datasets: [
+      {
+        data: sampled.map((p) => p[1]),
+        borderColor: color,
+        backgroundColor: isUp ? 'rgba(52,211,153,0.08)' : 'rgba(248,113,113,0.08)',
+        borderWidth: 1.5,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+      },
+    ],
   }
 })
 
@@ -56,18 +58,26 @@ const chartOptions = {
   },
 }
 
-watch(() => props.prices, (newVal, oldVal) => {
-  if (!chartRef.value || !newVal || newVal === oldVal) return
-  gsap.fromTo(chartRef.value, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3 })
-})
+watch(
+  () => props.prices,
+  (newVal, oldVal) => {
+    if (!chartRef.value || !newVal || newVal === oldVal) return
+    gsap.fromTo(chartRef.value, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3 })
+  },
+)
 </script>
 
 <template>
-  <div ref="chartRef" class="relative w-full h-full">
+  <div ref="chartRef" class="relative h-full w-full">
     <div v-if="loading" class="absolute inset-0 flex items-center justify-center">
-      <div class="text-xs text-white/30 animate-pulse">Loading chart…</div>
+      <div class="text-md-on-surface-variant/60 animate-pulse text-xs">Loading chart…</div>
     </div>
-    <Line v-else-if="chartData" :data="chartData" :options="chartOptions" class="w-full h-full" />
-    <div v-else class="absolute inset-0 flex items-center justify-center text-xs text-white/20">No chart data</div>
+    <Line v-else-if="chartData" :data="chartData" :options="chartOptions" class="h-full w-full" />
+    <div
+      v-else
+      class="text-md-on-surface-variant/40 absolute inset-0 flex items-center justify-center text-xs"
+    >
+      No chart data
+    </div>
   </div>
 </template>

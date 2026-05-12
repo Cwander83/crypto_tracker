@@ -8,7 +8,14 @@ import { useMarkets } from './composables/useMarkets'
 import { useTrending } from './composables/useTrending'
 import type { TableCoin } from './components/CoinTable.vue'
 
-const { coins, topByMarketCap, topGainers, topLosers, loading: marketsLoading, fetch: fetchMarkets } = useMarkets()
+const {
+  coins,
+  topByMarketCap,
+  topGainers,
+  topLosers,
+  loading: marketsLoading,
+  fetch: fetchMarkets,
+} = useMarkets()
 const { trending, loading: trendingLoading, fetch: fetchTrending } = useTrending()
 
 const selectedCoinId = ref<string | null>(null)
@@ -39,14 +46,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#06080f] text-white overflow-x-hidden">
+  <div class="bg-md-surface text-md-on-surface min-h-screen overflow-x-hidden">
     <AppHeader @open-coin="openCoin" />
 
     <HeroSection :coins="coins" />
 
     <!-- Tables grid -->
-    <section class="max-w-7xl mx-auto px-6 pb-16">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <section class="mx-auto max-w-7xl px-6 pb-16">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <CoinTable
           title="Top by Market Cap"
           :coins="topByMarketCap"
@@ -81,9 +88,6 @@ onMounted(() => {
       </div>
     </section>
 
-    <CoinModal
-      :coin-id="selectedCoinId"
-      @close="closeModal"
-    />
+    <CoinModal v-if="selectedCoinId" :coin-id="selectedCoinId" @close="closeModal" />
   </div>
 </template>

@@ -1,35 +1,181 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @variant dark (&:where(.dark, .dark *));
 
-@theme {
-  --color-bg: #06080f;
-  --color-surface: #0b0f1a;
-  --color-surface-2: #111826;
-  --color-accent: #00d4ff;
-  --color-accent-blue: #0099ff;
+/* ─── MD3 Light Scheme (default) ────────────────────────────── */
+:root {
+  --md-sys-color-primary: #006685;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #c0eaff;
+  --md-sys-color-on-primary-container: #001f2a;
+  --md-sys-color-secondary: #006a65;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #9eeae4;
+  --md-sys-color-on-secondary-container: #002020;
+  --md-sys-color-tertiary: #2c5fa0;
+  --md-sys-color-on-tertiary: #ffffff;
+  --md-sys-color-tertiary-container: #d3e2ff;
+  --md-sys-color-on-tertiary-container: #001b3f;
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #ffdad6;
+  --md-sys-color-on-error-container: #410002;
+  --md-sys-color-surface: #f5fafb;
+  --md-sys-color-on-surface: #171c1e;
+  --md-sys-color-on-surface-variant: #40484a;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #eff5f6;
+  --md-sys-color-surface-container: #e9eef0;
+  --md-sys-color-surface-container-high: #e3e9ea;
+  --md-sys-color-surface-container-highest: #dde3e5;
+  --md-sys-color-outline: #6f7778;
+  --md-sys-color-outline-variant: #bbc9cb;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-inverse-surface: #2c3336;
+  --md-sys-color-inverse-on-surface: #ecf2f3;
+  --md-sys-color-inverse-primary: #72d5ff;
 
+  /* Semantic crypto colors (prefixed to avoid @theme circular ref) */
+  --app-color-gain: #059669;
+  --app-color-on-gain: #ffffff;
+  --app-color-loss: #dc2626;
+  --app-color-on-loss: #ffffff;
+
+  /* MD3 Shape */
+  --md-sys-shape-corner-none: 0px;
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-full: 9999px;
+
+  /* MD3 Motion (CSS transitions — GSAP animations unchanged) */
+  --md-sys-motion-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --md-sys-motion-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --md-sys-motion-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-duration-short: 200ms;
+  --md-sys-motion-duration-medium: 300ms;
+  --md-sys-motion-duration-long: 400ms;
+}
+
+/* ─── MD3 Dark Scheme ────────────────────────────────────────── */
+.dark {
+  --md-sys-color-primary: #72d5ff;
+  --md-sys-color-on-primary: #003849;
+  --md-sys-color-primary-container: #004f67;
+  --md-sys-color-on-primary-container: #c0eaff;
+  --md-sys-color-secondary: #84cfca;
+  --md-sys-color-on-secondary: #003735;
+  --md-sys-color-secondary-container: #004f4c;
+  --md-sys-color-on-secondary-container: #a0ebe5;
+  --md-sys-color-tertiary: #9cbff4;
+  --md-sys-color-on-tertiary: #002f6a;
+  --md-sys-color-tertiary-container: #1a4484;
+  --md-sys-color-on-tertiary-container: #d3e2ff;
+  --md-sys-color-error: #ffb4ab;
+  --md-sys-color-on-error: #690005;
+  --md-sys-color-error-container: #93000a;
+  --md-sys-color-on-error-container: #ffdad6;
+  --md-sys-color-surface: #0a1417;
+  --md-sys-color-on-surface: #dee3e5;
+  --md-sys-color-on-surface-variant: #c3cacc;
+  --md-sys-color-surface-container-lowest: #040f12;
+  --md-sys-color-surface-container-low: #121c1f;
+  --md-sys-color-surface-container: #161f22;
+  --md-sys-color-surface-container-high: #212a2d;
+  --md-sys-color-surface-container-highest: #2b3436;
+  --md-sys-color-outline: #6f7778;
+  --md-sys-color-outline-variant: #40484a;
+  --md-sys-color-scrim: #000000;
+  --md-sys-color-inverse-surface: #dee3e5;
+  --md-sys-color-inverse-on-surface: #2c3336;
+  --md-sys-color-inverse-primary: #006685;
+
+  /* Semantic crypto colors — dark */
+  --app-color-gain: #34d399;
+  --app-color-on-gain: #052e16;
+  --app-color-loss: #f87171;
+  --app-color-on-loss: #450a0a;
+}
+
+/* ─── Tailwind v4 @theme bridge ──────────────────────────────── */
+@theme {
+  /* MD3 color roles → Tailwind utilities (bg-md-primary, text-md-on-surface, etc.) */
+  --color-md-primary: var(--md-sys-color-primary);
+  --color-md-on-primary: var(--md-sys-color-on-primary);
+  --color-md-primary-container: var(--md-sys-color-primary-container);
+  --color-md-on-primary-container: var(--md-sys-color-on-primary-container);
+  --color-md-secondary: var(--md-sys-color-secondary);
+  --color-md-on-secondary: var(--md-sys-color-on-secondary);
+  --color-md-secondary-container: var(--md-sys-color-secondary-container);
+  --color-md-on-secondary-container: var(--md-sys-color-on-secondary-container);
+  --color-md-tertiary: var(--md-sys-color-tertiary);
+  --color-md-on-tertiary: var(--md-sys-color-on-tertiary);
+  --color-md-tertiary-container: var(--md-sys-color-tertiary-container);
+  --color-md-on-tertiary-container: var(--md-sys-color-on-tertiary-container);
+  --color-md-error: var(--md-sys-color-error);
+  --color-md-on-error: var(--md-sys-color-on-error);
+  --color-md-error-container: var(--md-sys-color-error-container);
+  --color-md-on-error-container: var(--md-sys-color-on-error-container);
+  --color-md-surface: var(--md-sys-color-surface);
+  --color-md-on-surface: var(--md-sys-color-on-surface);
+  --color-md-on-surface-variant: var(--md-sys-color-on-surface-variant);
+  --color-md-surface-container-lowest: var(--md-sys-color-surface-container-lowest);
+  --color-md-surface-container-low: var(--md-sys-color-surface-container-low);
+  --color-md-surface-container: var(--md-sys-color-surface-container);
+  --color-md-surface-container-high: var(--md-sys-color-surface-container-high);
+  --color-md-surface-container-highest: var(--md-sys-color-surface-container-highest);
+  --color-md-outline: var(--md-sys-color-outline);
+  --color-md-outline-variant: var(--md-sys-color-outline-variant);
+  --color-md-scrim: var(--md-sys-color-scrim);
+  --color-md-inverse-surface: var(--md-sys-color-inverse-surface);
+  --color-md-inverse-on-surface: var(--md-sys-color-inverse-on-surface);
+  --color-md-inverse-primary: var(--md-sys-color-inverse-primary);
+
+  /* Semantic — bridged from --app-color-* to avoid circular reference */
+  --color-gain: var(--app-color-gain);
+  --color-on-gain: var(--app-color-on-gain);
+  --color-loss: var(--app-color-loss);
+  --color-on-loss: var(--app-color-on-loss);
+
+  /* Shape → border-radius utilities */
+  --radius-md-small: var(--md-sys-shape-corner-small);
+  --radius-md-medium: var(--md-sys-shape-corner-medium);
+  --radius-md-large: var(--md-sys-shape-corner-large);
+  --radius-md-xl: var(--md-sys-shape-corner-extra-large);
+  --radius-md-full: var(--md-sys-shape-corner-full);
+
+  /* Fonts */
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
 @layer base {
-  html { color-scheme: dark; }
+  html {
+    color-scheme: dark light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
   body {
     margin: 0;
-    background: #06080f;
-    color: white;
+    background: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
+    transition:
+      background var(--md-sys-motion-duration-medium) var(--md-sys-motion-standard),
+      color var(--md-sys-motion-duration-medium) var(--md-sys-motion-standard);
   }
 }
 
 @layer utilities {
   .chart-glass {
-    background: rgba(0, 212, 255, 0.02);
+    background: color-mix(in srgb, var(--md-sys-color-primary) 2%, transparent);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(0, 212, 255, 0.1);
     position: relative;
     overflow: hidden;
   }
@@ -37,10 +183,19 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(0, 212, 255, 0.04) 0%, transparent 60%);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--md-sys-color-primary) 4%, transparent) 0%,
+      transparent 60%
+    );
     pointer-events: none;
   }
 
-  .scrollbar-hide::-webkit-scrollbar { display: none; }
-  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
