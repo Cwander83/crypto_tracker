@@ -55,7 +55,9 @@ export function useCoin() {
     chartLoading.value = true
     chartData.value = null
     try {
-      const res = await window.fetch(`${BASE}/coins/${id}/market_chart?vs_currency=usd&days=${days}`)
+      const res = await window.fetch(
+        `${BASE}/coins/${id}/market_chart?vs_currency=usd&days=${days}`,
+      )
       if (!res.ok) throw new Error('API error')
       chartData.value = await res.json()
     } catch {

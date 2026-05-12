@@ -28,23 +28,39 @@ let debounceTimer: ReturnType<typeof setTimeout>
 function openDropdown() {
   if (isOpen.value) return
   isOpen.value = true
-  gsap.fromTo(dropdownRef.value, { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: 0.2, ease: 'power2.out' })
+  gsap.fromTo(
+    dropdownRef.value,
+    { autoAlpha: 0, y: -8 },
+    { autoAlpha: 1, y: 0, duration: 0.2, ease: 'power2.out' },
+  )
 }
 
 function closeDropdown() {
-  gsap.to(dropdownRef.value, { autoAlpha: 0, y: -8, duration: 0.15, onComplete: () => { isOpen.value = false } })
+  gsap.to(dropdownRef.value, {
+    autoAlpha: 0,
+    y: -8,
+    duration: 0.15,
+    onComplete: () => {
+      isOpen.value = false
+    },
+  })
 }
 
 function onInput() {
   clearTimeout(debounceTimer)
-  if (!query.value.trim()) { results.value = []; return }
+  if (!query.value.trim()) {
+    results.value = []
+    return
+  }
   debounceTimer = setTimeout(search, 300)
 }
 
 async function search() {
   loading.value = true
   try {
-    const res = await fetch(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query.value)}`)
+    const res = await fetch(
+      `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query.value)}`,
+    )
     const data = await res.json()
     results.value = (data.coins ?? []).slice(0, 6)
   } finally {
@@ -53,7 +69,7 @@ async function search() {
 }
 
 function selectCoin(id: string) {
-  recentSearches.value = [id, ...recentSearches.value.filter(r => r !== id)].slice(0, 10)
+  recentSearches.value = [id, ...recentSearches.value.filter((r) => r !== id)].slice(0, 10)
   query.value = ''
   results.value = []
   closeDropdown()
@@ -71,10 +87,20 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
 </script>
 
 <template>
-  <div ref="containerRef" class="relative flex-1 max-w-lg">
+  <div ref="containerRef" class="relative max-w-lg flex-1">
     <div class="relative">
-      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      <svg
+        class="text-md-on-surface-variant/60 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        />
       </svg>
       <input
         ref="inputRef"
@@ -83,7 +109,7 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
         @input="onInput"
         type="text"
         placeholder="Search coins…"
-        class="w-full bg-white/5 border border-white/10 pl-10 pr-4 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-[#00d4ff]/60 transition-colors"
+        class="border-md-outline-variant/40 bg-md-surface-container text-md-on-surface placeholder-md-on-surface-variant/60 focus:border-md-primary/60 w-full border py-2 pr-4 pl-10 text-sm transition-colors outline-none"
       />
     </div>
 
@@ -91,44 +117,70 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
     <div
       v-show="isOpen"
       ref="dropdownRef"
-      class="absolute top-full left-0 right-0 mt-2 bg-[#0b0f1a] border border-white/10 shadow-2xl z-50 overflow-hidden"
+      class="border-md-outline-variant/40 bg-md-surface-container absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden border shadow-2xl"
       style="visibility: hidden"
     >
       <!-- Search results -->
       <template v-if="query.trim()">
-        <div v-if="loading" class="px-4 py-3 text-xs text-white/30">Searching…</div>
+        <div v-if="loading" class="text-md-on-surface-variant/60 px-4 py-3 text-xs">Searching…</div>
         <template v-else>
           <button
             v-for="coin in results"
             :key="coin.id"
             @click="selectCoin(coin.id)"
-            class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#00d4ff]/5 transition-colors text-left"
+            class="hover:bg-md-primary/5 flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors"
           >
-            <img :src="coin.thumb" :alt="coin.name" class="w-7 h-7 rounded-full" />
+            <img :src="coin.thumb" :alt="coin.name" class="h-7 w-7 rounded-full" />
             <div>
-              <div class="text-sm font-medium">{{ coin.name }}</div>
-              <div class="text-xs text-white/40 font-mono">{{ coin.symbol.toUpperCase() }}</div>
+              <div class="text-md-on-surface text-sm font-medium">{{ coin.name }}</div>
+              <div class="text-md-on-surface-variant font-mono text-xs">
+                {{ coin.symbol.toUpperCase() }}
+              </div>
             </div>
-            <div v-if="coin.market_cap_rank" class="ml-auto text-xs text-white/30 font-mono">#{{ coin.market_cap_rank }}</div>
+            <div
+              v-if="coin.market_cap_rank"
+              class="text-md-on-surface-variant/60 ml-auto font-mono text-xs"
+            >
+              #{{ coin.market_cap_rank }}
+            </div>
           </button>
-          <div v-if="results.length === 0" class="px-4 py-3 text-xs text-white/30">No results for "{{ query }}"</div>
+          <div v-if="results.length === 0" class="text-md-on-surface-variant/60 px-4 py-3 text-xs">
+            No results for "{{ query }}"
+          </div>
         </template>
       </template>
 
       <!-- Recent searches (shown when input is empty) -->
       <template v-else>
-        <div class="px-3 pt-3 pb-1 text-xs text-white/30 font-medium">Recent searches</div>
-        <div v-if="recentSearches.length === 0" class="px-4 py-3 text-xs text-white/30">No recent searches</div>
+        <div class="text-md-on-surface-variant/60 px-3 pt-3 pb-1 text-xs font-medium">
+          Recent searches
+        </div>
+        <div
+          v-if="recentSearches.length === 0"
+          class="text-md-on-surface-variant/60 px-4 py-3 text-xs"
+        >
+          No recent searches
+        </div>
         <button
           v-for="id in recentSearches.slice(0, 5)"
           :key="id"
           @click="selectCoin(id)"
-          class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#00d4ff]/5 transition-colors text-left"
+          class="hover:bg-md-primary/5 flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors"
         >
-          <div class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-xs text-white/50">↩</div>
-          <div class="text-sm font-medium capitalize">{{ id.replace(/-/g, ' ') }}</div>
+          <div
+            class="bg-md-surface-container-high text-md-on-surface-variant flex h-7 w-7 items-center justify-center rounded-full text-xs"
+          >
+            ↩
+          </div>
+          <div class="text-md-on-surface text-sm font-medium capitalize">
+            {{ id.replace(/-/g, ' ') }}
+          </div>
         </button>
-        <div class="border-t border-white/5 mt-1 px-3 py-2 text-xs text-white/30">Type to search all coins…</div>
+        <div
+          class="border-md-outline-variant/20 text-md-on-surface-variant/60 mt-1 border-t px-3 py-2 text-xs"
+        >
+          Type to search all coins…
+        </div>
       </template>
     </div>
   </div>
