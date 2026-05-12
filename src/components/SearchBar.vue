@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { gsap } from 'gsap'
 import { useStorage } from '../composables/useStorage'
+import { cacheGet, cacheSet } from '../utils/cache'
 
 const emit = defineEmits<{ 'open-coin': [id: string] }>()
 
@@ -20,6 +21,7 @@ const query = ref('')
 const results = ref<SearchResult[]>([])
 const isOpen = ref(false)
 const loading = ref(false)
+const rateLimited = ref(false)
 
 const recentSearches = useStorage<string[]>('ct_recent_searches', [])
 
@@ -52,17 +54,33 @@ function onInput() {
     results.value = []
     return
   }
-  debounceTimer = setTimeout(search, 300)
+  debounceTimer = setTimeout(search, 500)
 }
 
 async function search() {
+  const q = query.value.trim().toLowerCase()
+  const cacheKey = `search-${q}`
+  const cached = cacheGet<SearchResult[]>(cacheKey)
+  if (cached) {
+    results.value = cached
+    return
+  }
+
   loading.value = true
+  rateLimited.value = false
   try {
     const res = await fetch(
       `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query.value)}`,
     )
+    if (res.status === 429) {
+      rateLimited.value = true
+      results.value = []
+      return
+    }
     const data = await res.json()
-    results.value = (data.coins ?? []).slice(0, 6)
+    const coins = (data.coins ?? []).slice(0, 6) as SearchResult[]
+    cacheSet(cacheKey, coins, 2 * 60_000)
+    results.value = coins
   } finally {
     loading.value = false
   }
@@ -124,6 +142,9 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
       <template v-if="query.trim()">
         <div v-if="loading" class="text-md-on-surface-variant/60 px-4 py-3 text-xs">Searching…</div>
         <template v-else>
+          <div v-if="rateLimited" class="text-md-on-surface-variant/60 px-4 py-3 text-xs">
+            Rate limited — please wait a moment
+          </div>
           <button
             v-for="coin in results"
             :key="coin.id"
